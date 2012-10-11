@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.logging.Level;
@@ -175,8 +176,20 @@ public class RawSocketSender implements Sender {
             out.write(getBuffer());
             out.flush();
             clearBuffer();
+        } catch (SocketException e) {
+        	// reconnect
+            try {
+            	socket = null;
+            	reconnect();
+			} catch (IOException ie) {
+	            LOG.throwing(this.getClass().getName(), "flush", ie);
+				throw new IllegalStateException(ie);
+			}
+            flush();
+
         } catch (IOException e) {
             LOG.throwing(this.getClass().getName(), "flush", e);
+			throw new IllegalStateException(e);
         }
     }
 
